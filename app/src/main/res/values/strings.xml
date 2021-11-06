@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Умный дом</string>
+    <string name="title_home">Главная</string>
+    <string name="title_dashboard">Вкладка 2</string>
+    <string name="title_notifications">Вкладка 3</string>
+    <string name="logActivity">Войти</string>
+    <string name="email">Введите логин</string>
+    <string name="password">Введите пароль</string>
+    <string name="errorName">Неправильно введено имя</string>
+    <string name="successSiqnIn">Вы успешны вошли</string>
+</resources>
