@@ -5,6 +5,8 @@
       <map>
         <entry key="..\:/AndroidStudioProjects/Smart_House/app/src/main/res/layout/activity_main.xml" value="0.4" />
         <entry key="..\:/AndroidStudioProjects/Smart_House/app/src/main/res/layout/activity_sign_in.xml" value="0.259375" />
+        <entry key="..\:/AndroidStudioProjects/Smart_House/app/src/main/res/layout/fragment_home.xml" value="0.259375" />
+        <entry key="..\:/AndroidStudioProjects/Smart_House/app/src/main/res/layout/fragment_notifications.xml" value="0.259375" />
         <entry key="..\:/AndroidStudioProjects/Smart_House/app/src/main/res/menu/bottom_nav_menu.xml" value="0.259375" />
       </map>
     </option>
