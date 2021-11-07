@@ -3,18 +3,18 @@ package spiridonov.smart_house.ui
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import spiridonov.smart_house.MainActivity
 import spiridonov.smart_house.databinding.FragmentHomeBinding
-import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.Statement
+import java.util.*
 
 class HomeFragment : Fragment() {
 
@@ -38,53 +38,38 @@ class HomeFragment : Fragment() {
         if (msp.contains(MainActivity.KEY_LOGIN)) name =
             msp.getString(MainActivity.KEY_LOGIN, "").toString()
 
-        this.url = String.format(this.url, this.host, this.port, this.database)
-
-      Class.forName("org.postgresql.Driver::class.java")
-        val connection: Connection
-        try {
-            connection = DriverManager.getConnection(url, user, pass)
-            textView.text = textView.text.toString() + "\n" + "DriverManager.getConnection(url, user, pass)"
-        } catch (e: Exception) {
-            Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show()
-            textView.text = textView.text.toString() + "\n" + e.toString()
-        }
+        url = String.format(url, host, port, database)
         var text = "Влажность в гостиной:\n"
         val handler = Handler()
-
-        //val thread = Thread {
-        try {
-            textView.text = textView.text.toString() + "\n" + "try"
-
-            val connection = DriverManager.getConnection(url, user, pass)
-            Toast.makeText(context, "if3", Toast.LENGTH_SHORT).show()
-            val st: Statement = connection.createStatement()
-            Toast.makeText(
-                context,
-                "select * from $name ORDER BY date DESC",
-                Toast.LENGTH_SHORT
-            )
-                .show()
-            val rs: ResultSet = st.executeQuery("select * from $name ORDER BY date DESC")
-            while (rs.next()) {
-                val date = rs.getDate("date")?.toString()
-                val temperature = rs.getInt("temperature")
-                val humidity = rs.getInt("humidity")
-                text = "$text$date: Температура: $temperature; Влажность: $humidity\n"
-                handler.post {
-                    textView.text = text
+        val thread = Thread {
+            try {
+                Class.forName("org.postgresql.Driver")
+                val connection = DriverManager.getConnection(url, user, pass)
+                val st: Statement = connection.createStatement()
+                val rs: ResultSet = st.executeQuery("select * from $name ORDER BY date DESC")
+                while (rs.next()) {
+                    val date = rs.getTimestamp("date")
+                    val temperature = rs.getFloat("temperature")
+                    val humidity = rs.getFloat("humidity")
+                    val calendar = dateToCalendar(date)
+                    val day = calendar[Calendar.DAY_OF_MONTH]
+                    val month = calendar[Calendar.MONTH]
+                    val year = calendar[Calendar.YEAR]
+                    val hour = calendar[Calendar.HOUR]
+                    val min = calendar[Calendar.MINUTE]
+                    text =
+                        "$text$day.$month.$year $hour:$min: Температура: $temperature; Влажность: $humidity\n"
+                    handler.post {
+                        textView.text = text
+                    }
                 }
+            } catch (e: Exception) {
+                Log.d("DB", e.toString())
             }
-        } catch (e: Exception) {
-            Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show()
-            textView.text = textView.text.toString() + "\nerr  "+ e.toString()
         }
-        //  }
-        ///   if (name != "") {
-
-
-        // thread.start()
-        // }
+        if (name != "") {
+            thread.start()
+        }
 
 
         return root
@@ -93,5 +78,12 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun dateToCalendar(date: Date): Calendar {
+        val calendar = Calendar.getInstance()
+        calendar.clear(Calendar.ZONE_OFFSET)
+        calendar.time = date
+        return calendar
     }
 }
