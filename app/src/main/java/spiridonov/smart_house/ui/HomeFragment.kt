@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.google.firebase.database.FirebaseDatabase
 import org.eazegraph.lib.models.ValueLinePoint
@@ -39,7 +40,9 @@ class HomeFragment : Fragment() {
     private lateinit var spinnerDate: Spinner
     private var sensors = arrayListOf<Array<String>>()
     private var allrooms = arrayListOf<String>()
-    private var today = 0;
+    private var today = 0
+    var isFanWorking = false
+    private var selected = ""
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -72,6 +75,7 @@ class HomeFragment : Fragment() {
                 parent: AdapterView<*>?,
                 itemSelected: View, selectedItemPosition: Int, selectedId: Long
             ) {
+                selected = allrooms[selectedItemPosition]
                 selectFromSpinner(name = name)
             }
 
@@ -81,7 +85,31 @@ class HomeFragment : Fragment() {
         if (name != "")
             getCategoryFromDB(name = name)
 
+        binding.fanbtn.setOnClickListener {
+            val database = FirebaseDatabase.getInstance().reference
+            val reference =
+                database.child(name).child("rooms").child(selected).child("isFanWorkRoot")
+            if (isFanWorking) {
+                binding.fantxt.text = "Вентилятор отключён"
+                binding.fanbtn.text = "Включить вентилятор"
+                reference.setValue(false)
+                Toast.makeText(
+                    requireContext(),
+                    "Вентилятор выключится в течение 10 минут",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                binding.fantxt.text = "Вентилятор работает"
+                binding.fanbtn.text = "Выключить вентилятор"
+                reference.setValue(true)
+                Toast.makeText(
+                    requireContext(),
+                    "Вентилятор включится в течение 10 минут",
+                    Toast.LENGTH_LONG
+                ).show()
 
+            }
+        }
         return root
     }
 
@@ -107,6 +135,7 @@ class HomeFragment : Fragment() {
                     sensors.add(buffArray)
                 }
             }
+            selected = allrooms[0]
             val adaptermain: ArrayAdapter<String> =
                 ArrayAdapter<String>(
                     requireActivity(),
@@ -125,7 +154,7 @@ class HomeFragment : Fragment() {
                 )
             adapterdate.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinnerDate.adapter = adapterdate
-
+            fanWorking(name)
 
         }
     }
@@ -133,6 +162,22 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun fanWorking(name: String) {
+        val database = FirebaseDatabase.getInstance().reference
+        val reference = database.child(name).child("rooms").child(selected).child("isFanWork")
+        reference.get().addOnSuccessListener {
+            isFanWorking = it.value as Boolean
+            if (isFanWorking) {
+                binding.fantxt.text = "Вентилятор работает"
+                binding.fanbtn.text = "Выключить вентилятор"
+            } else {
+                binding.fantxt.text = "Вентилятор отключён"
+                binding.fanbtn.text = "Включить вентилятор"
+            }
+
+        }
     }
 
     private fun dateToCalendar(date: Date): Calendar {
