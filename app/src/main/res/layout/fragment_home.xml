@@ -14,10 +14,19 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="10dp" />
 
             <Spinner
                 android:id="@+id/spinnerCategory"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="10dp" />
+
+            <Spinner
+                android:id="@+id/spinnerDay"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
@@ -28,7 +37,7 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="10dp" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -37,7 +46,7 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="10dp" />
 
             <org.eazegraph.lib.charts.ValueLineChart
                 android:id="@+id/cubiclinechartHumidity"
@@ -62,7 +71,7 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="10dp" />
 
             <org.eazegraph.lib.charts.ValueLineChart
                 android:id="@+id/cubiclinechartTemperature"
@@ -82,13 +91,13 @@
 
             <Space
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="10dp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="Вентилятор не работает." />
-            .
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="100dp" />

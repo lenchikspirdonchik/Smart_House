@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -13,16 +14,15 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.google.firebase.database.FirebaseDatabase
+import org.eazegraph.lib.models.ValueLinePoint
+import org.eazegraph.lib.models.ValueLineSeries
 import spiridonov.smart_house.MainActivity
 import spiridonov.smart_house.databinding.FragmentHomeBinding
 import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.Statement
+import java.text.SimpleDateFormat
 import java.util.*
-import org.eazegraph.lib.models.ValueLinePoint
-import org.eazegraph.lib.models.ValueLineSeries
-
-
 
 
 class HomeFragment : Fragment() {
@@ -36,8 +36,10 @@ class HomeFragment : Fragment() {
     private val pass = "7369c86979b2cbf92b10879ec08ba1ca99394ea761c0462a4baf24d3a2225685"
     private var url = "jdbc:postgresql://%s:%d/%s"
     private lateinit var spinner: Spinner
+    private lateinit var spinnerDate: Spinner
     private var sensors = arrayListOf<Array<String>>()
-    var allrooms = arrayListOf<String>()
+    private var allrooms = arrayListOf<String>()
+    private var today = 0;
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -45,6 +47,7 @@ class HomeFragment : Fragment() {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
         spinner = binding.spinnerCategory
+        spinnerDate = binding.spinnerDay
         val msp = requireActivity().getSharedPreferences("AppMemory", Context.MODE_PRIVATE)
         var name = ""
         if (msp.contains(MainActivity.KEY_LOGIN)) name =
@@ -52,13 +55,24 @@ class HomeFragment : Fragment() {
         url = String.format(url, host, port, database)
 
 
+        spinnerDate.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                itemSelected: View, selectedItemPosition: Int, selectedId: Long
+            ) {
+                today = selectedItemPosition
+                selectFromSpinner(name = name)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
                 itemSelected: View, selectedItemPosition: Int, selectedId: Long
             ) {
-                if (sensors[0][0] == "Sensor0")
-                    readSQLDB(name = name, sensor = sensors[0][1].toInt())
+                selectFromSpinner(name = name)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -68,8 +82,18 @@ class HomeFragment : Fragment() {
             getCategoryFromDB(name = name)
 
 
-
         return root
+    }
+
+    private fun selectFromSpinner(name: String) {
+        if (sensors[0][0] == "Sensor0") {
+            val oneDay = 1000 * 60 * 60 * 24
+            val mydate = Date(System.currentTimeMillis() - oneDay * today)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+            val whatDayGet: String = dateFormat.format(mydate)
+            Log.d("DAY IS", whatDayGet)
+            readSQLDB(name = name, sensor = sensors[0][1].toInt(), whatDayGet = whatDayGet)
+        }
     }
 
     private fun getCategoryFromDB(name: String) {
@@ -92,6 +116,17 @@ class HomeFragment : Fragment() {
             adaptermain.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinner.adapter = adaptermain
 
+
+            val adapterdate: ArrayAdapter<String> =
+                ArrayAdapter<String>(
+                    requireActivity(),
+                    spiridonov.smart_house.R.layout.support_simple_spinner_dropdown_item,
+                    arrayOf("Сегодня", "Вчера", "Позавчера")
+                )
+            adapterdate.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinnerDate.adapter = adapterdate
+
+
         }
     }
 
@@ -107,8 +142,7 @@ class HomeFragment : Fragment() {
         return calendar
     }
 
-    private fun readSQLDB(name: String, sensor: Int) {
-        val handler = Handler()
+    private fun readSQLDB(name: String, sensor: Int, whatDayGet: String) {
         val dateFromDB = arrayListOf<Array<String>>()
         val thread = Thread {
             try {
@@ -116,7 +150,7 @@ class HomeFragment : Fragment() {
                 val connection = DriverManager.getConnection(url, user, pass)
                 val st: Statement = connection.createStatement()
                 val rs: ResultSet =
-                    st.executeQuery("select * from $name WHERE sensor = $sensor ORDER BY date;")
+                    st.executeQuery("select * from $name WHERE sensor = $sensor AND (CAST(date AS DATE) = CAST('$whatDayGet' AS DATE)) ORDER BY date;")
                 while (rs.next()) {
                     val date = rs.getTimestamp("date")
                     val temperature = rs.getFloat("temperature")
@@ -127,33 +161,46 @@ class HomeFragment : Fragment() {
                     val year = calendar[Calendar.YEAR]
                     val hour = calendar[Calendar.HOUR]
                     val min = calendar[Calendar.MINUTE]
-                    val buffArray = arrayOf(day.toString(), month.toString(),hour.toString(), min.toString(), temperature.toString(), humidity.toString())
-                    Log.d("DB",  "$day.$month.$year $hour:$min: Температура: $temperature; Влажность: $humidity\n")
+                    val buffArray = arrayOf(
+                        day.toString(),
+                        month.toString(),
+                        hour.toString(),
+                        min.toString(),
+                        temperature.toString(),
+                        humidity.toString()
+                    )
                     dateFromDB.add(buffArray)
                 }
             } catch (e: Exception) {
                 Log.d("DB", e.toString())
             }
-            handler.post{
-                val mCubicValueLineChartHumidity= binding.cubiclinechartHumidity
-                val series = ValueLineSeries()
-                series.color = Color.parseColor("#52BF25")
-                val mCubicValueLineChartTemperature= binding.cubiclinechartTemperature
-                val seriestemp = ValueLineSeries()
-                seriestemp.color = -0xa9480f
-
-                for (date in dateFromDB){
-                    var data = "${date[2]}:${date[3]}"
-                    series.addPoint(ValueLinePoint(data, date[5].toFloat()))
-                    data = "${date[2]}:${date[3]}"
-                    seriestemp.addPoint(ValueLinePoint(data, date[4].toFloat()))
-                }
-                mCubicValueLineChartHumidity.addSeries(series)
-                mCubicValueLineChartHumidity.startAnimation()
-                mCubicValueLineChartTemperature.addSeries(seriestemp)
-                mCubicValueLineChartTemperature.startAnimation()
+            Handler(Looper.getMainLooper()).post {
+                buildCharts(dateFromDB = dateFromDB)
             }
         }
         thread.start()
+    }
+
+    private fun buildCharts(dateFromDB: ArrayList<Array<String>>) {
+        val mCubicValueLineChartHumidity = binding.cubiclinechartHumidity
+        val series = ValueLineSeries()
+        series.color = Color.parseColor("#52BF25")
+        val mCubicValueLineChartTemperature = binding.cubiclinechartTemperature
+        val seriestemp = ValueLineSeries()
+        seriestemp.color = -0xa9480f
+        mCubicValueLineChartHumidity.clearChart()
+        mCubicValueLineChartTemperature.clearChart()
+
+        for (date in dateFromDB) {
+            var data = "${date[2]}:${date[3]}"
+            series.addPoint(ValueLinePoint(data, date[5].toFloat()))
+            data = "${date[2]}:${date[3]}"
+            seriestemp.addPoint(ValueLinePoint(data, date[4].toFloat()))
+        }
+
+        mCubicValueLineChartHumidity.addSeries(series)
+        mCubicValueLineChartHumidity.startAnimation()
+        mCubicValueLineChartTemperature.addSeries(seriestemp)
+        mCubicValueLineChartTemperature.startAnimation()
     }
 }
