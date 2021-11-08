@@ -1,6 +1,7 @@
 package spiridonov.smart_house.ui
 
 import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
@@ -13,12 +14,16 @@ import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.google.firebase.database.FirebaseDatabase
 import spiridonov.smart_house.MainActivity
-import spiridonov.smart_house.R
 import spiridonov.smart_house.databinding.FragmentHomeBinding
 import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.Statement
 import java.util.*
+import org.eazegraph.lib.models.ValueLinePoint
+import org.eazegraph.lib.models.ValueLineSeries
+
+
+
 
 class HomeFragment : Fragment() {
 
@@ -31,6 +36,7 @@ class HomeFragment : Fragment() {
     private val pass = "7369c86979b2cbf92b10879ec08ba1ca99394ea761c0462a4baf24d3a2225685"
     private var url = "jdbc:postgresql://%s:%d/%s"
     private lateinit var spinner: Spinner
+    private var sensors = arrayListOf<Array<String>>()
     var allrooms = arrayListOf<String>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -45,51 +51,22 @@ class HomeFragment : Fragment() {
             msp.getString(MainActivity.KEY_LOGIN, "").toString()
         url = String.format(url, host, port, database)
 
-        var category: String
+
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
                 itemSelected: View, selectedItemPosition: Int, selectedId: Long
             ) {
-                category = allrooms[selectedItemPosition]
+                if (sensors[0][0] == "Sensor0")
+                    readSQLDB(name = name, sensor = sensors[0][1].toInt())
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-
-        var text = "Влажность в гостиной:\n"
-        val handler = Handler()
-        val thread = Thread {
-            try {
-                Class.forName("org.postgresql.Driver")
-                val connection = DriverManager.getConnection(url, user, pass)
-                val st: Statement = connection.createStatement()
-                val rs: ResultSet = st.executeQuery("select * from $name ORDER BY date DESC")
-                while (rs.next()) {
-                    val date = rs.getTimestamp("date")
-                    val temperature = rs.getFloat("temperature")
-                    val humidity = rs.getFloat("humidity")
-                    val calendar = dateToCalendar(date)
-                    val day = calendar[Calendar.DAY_OF_MONTH]
-                    val month = calendar[Calendar.MONTH]
-                    val year = calendar[Calendar.YEAR]
-                    val hour = calendar[Calendar.HOUR]
-                    val min = calendar[Calendar.MINUTE]
-                    text =
-                        "$text$day.$month.$year $hour:$min: Температура: $temperature; Влажность: $humidity\n"
-                    handler.post {
-
-                    }
-                }
-            } catch (e: Exception) {
-                Log.d("DB", e.toString())
-            }
-        }
-        if (name != "") {
+        if (name != "")
             getCategoryFromDB(name = name)
-            //thread.start()
-        }
+
 
 
         return root
@@ -102,18 +79,19 @@ class HomeFragment : Fragment() {
             for (postSnapshot in it.children) {
                 allrooms.add(postSnapshot.key.toString())
                 for (post in postSnapshot.children) {
-                    Log.d("DB", post.key.toString())
-                    Log.d("DB", post.value.toString())
+                    val buffArray = arrayOf(post.key.toString(), post.value.toString())
+                    sensors.add(buffArray)
                 }
             }
             val adaptermain: ArrayAdapter<String> =
                 ArrayAdapter<String>(
-                    requireContext(),
-                    R.layout.support_simple_spinner_dropdown_item,
+                    requireActivity(),
+                    spiridonov.smart_house.R.layout.support_simple_spinner_dropdown_item,
                     allrooms
                 )
             adaptermain.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinner.adapter = adaptermain
+
         }
     }
 
@@ -127,5 +105,55 @@ class HomeFragment : Fragment() {
         calendar.clear(Calendar.ZONE_OFFSET)
         calendar.time = date
         return calendar
+    }
+
+    private fun readSQLDB(name: String, sensor: Int) {
+        val handler = Handler()
+        val dateFromDB = arrayListOf<Array<String>>()
+        val thread = Thread {
+            try {
+                Class.forName("org.postgresql.Driver")
+                val connection = DriverManager.getConnection(url, user, pass)
+                val st: Statement = connection.createStatement()
+                val rs: ResultSet =
+                    st.executeQuery("select * from $name WHERE sensor = $sensor ORDER BY date;")
+                while (rs.next()) {
+                    val date = rs.getTimestamp("date")
+                    val temperature = rs.getFloat("temperature")
+                    val humidity = rs.getFloat("humidity")
+                    val calendar = dateToCalendar(date)
+                    val day = calendar[Calendar.DAY_OF_MONTH]
+                    val month = calendar[Calendar.MONTH]
+                    val year = calendar[Calendar.YEAR]
+                    val hour = calendar[Calendar.HOUR]
+                    val min = calendar[Calendar.MINUTE]
+                    val buffArray = arrayOf(day.toString(), month.toString(),hour.toString(), min.toString(), temperature.toString(), humidity.toString())
+                    Log.d("DB",  "$day.$month.$year $hour:$min: Температура: $temperature; Влажность: $humidity\n")
+                    dateFromDB.add(buffArray)
+                }
+            } catch (e: Exception) {
+                Log.d("DB", e.toString())
+            }
+            handler.post{
+                val mCubicValueLineChartHumidity= binding.cubiclinechartHumidity
+                val series = ValueLineSeries()
+                series.color = Color.parseColor("#52BF25")
+                val mCubicValueLineChartTemperature= binding.cubiclinechartTemperature
+                val seriestemp = ValueLineSeries()
+                seriestemp.color = -0xa9480f
+
+                for (date in dateFromDB){
+                    var data = "${date[2]}:${date[3]}"
+                    series.addPoint(ValueLinePoint(data, date[5].toFloat()))
+                    data = "${date[2]}:${date[3]}"
+                    seriestemp.addPoint(ValueLinePoint(data, date[4].toFloat()))
+                }
+                mCubicValueLineChartHumidity.addSeries(series)
+                mCubicValueLineChartHumidity.startAnimation()
+                mCubicValueLineChartTemperature.addSeries(seriestemp)
+                mCubicValueLineChartTemperature.startAnimation()
+            }
+        }
+        thread.start()
     }
 }
