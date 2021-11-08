@@ -7,9 +7,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.fragment.app.Fragment
+import com.google.firebase.database.FirebaseDatabase
 import spiridonov.smart_house.MainActivity
+import spiridonov.smart_house.R
 import spiridonov.smart_house.databinding.FragmentHomeBinding
 import java.sql.DriverManager
 import java.sql.ResultSet
@@ -26,19 +30,34 @@ class HomeFragment : Fragment() {
     private val user = "zftenjusikiyjk"
     private val pass = "7369c86979b2cbf92b10879ec08ba1ca99394ea761c0462a4baf24d3a2225685"
     private var url = "jdbc:postgresql://%s:%d/%s"
+    private lateinit var spinner: Spinner
+    var allrooms = arrayListOf<String>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
-        val textView: TextView = binding.textHome
+        spinner = binding.spinnerCategory
         val msp = requireActivity().getSharedPreferences("AppMemory", Context.MODE_PRIVATE)
         var name = ""
         if (msp.contains(MainActivity.KEY_LOGIN)) name =
             msp.getString(MainActivity.KEY_LOGIN, "").toString()
-
         url = String.format(url, host, port, database)
+
+        var category: String
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                itemSelected: View, selectedItemPosition: Int, selectedId: Long
+            ) {
+                category = allrooms[selectedItemPosition]
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+
         var text = "Влажность в гостиной:\n"
         val handler = Handler()
         val thread = Thread {
@@ -60,7 +79,7 @@ class HomeFragment : Fragment() {
                     text =
                         "$text$day.$month.$year $hour:$min: Температура: $temperature; Влажность: $humidity\n"
                     handler.post {
-                        textView.text = text
+
                     }
                 }
             } catch (e: Exception) {
@@ -68,11 +87,34 @@ class HomeFragment : Fragment() {
             }
         }
         if (name != "") {
-            thread.start()
+            getCategoryFromDB(name = name)
+            //thread.start()
         }
 
 
         return root
+    }
+
+    private fun getCategoryFromDB(name: String) {
+        val database = FirebaseDatabase.getInstance().reference
+        val reference = database.child(name).child("rooms")
+        reference.get().addOnSuccessListener {
+            for (postSnapshot in it.children) {
+                allrooms.add(postSnapshot.key.toString())
+                for (post in postSnapshot.children) {
+                    Log.d("DB", post.key.toString())
+                    Log.d("DB", post.value.toString())
+                }
+            }
+            val adaptermain: ArrayAdapter<String> =
+                ArrayAdapter<String>(
+                    requireContext(),
+                    R.layout.support_simple_spinner_dropdown_item,
+                    allrooms
+                )
+            adaptermain.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinner.adapter = adaptermain
+        }
     }
 
     override fun onDestroyView() {
