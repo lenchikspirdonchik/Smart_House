@@ -42,6 +42,7 @@ class HomeFragment : Fragment() {
     private var allrooms = arrayListOf<String>()
     private var today = 0
     var isFanWorking = false
+    private var isLightOn = false
     private var selected = ""
     private var whenTurnOnFan = 45.2F
     override fun onCreateView(
@@ -160,6 +161,37 @@ class HomeFragment : Fragment() {
 
             }
         }
+
+
+        binding.lightbtn.setOnClickListener {
+            val databasee = FirebaseDatabase.getInstance().reference
+            val reference =
+                databasee.child(name).child("rooms").child(selected).child("isLightOn")
+            if (isLightOn) {
+
+                binding.lighttxt.text = "Свет отключён"
+                binding.lightbtn.text = "Включить свет"
+                reference.setValue(false)
+                isLightOn = false
+                Toast.makeText(
+                    requireContext(),
+                    "Выключение",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                binding.lighttxt.text = "Свет включён"
+                binding.lightbtn.text = "Выключить свет"
+                isLightOn = true
+                reference.setValue(true)
+                Toast.makeText(
+                    requireContext(),
+                    "Включение",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        }
+
         return root
     }
 
@@ -174,6 +206,9 @@ class HomeFragment : Fragment() {
         }
         if (sensors[1][0] == "Sensor1") {
             fanWorking()
+        }
+        if (sensors[2][0] == "Sensor2") {
+            lightWorking()
         }
 
     }
@@ -216,7 +251,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun fanWorking() {
-
         for (item in sensors) {
             if (item[0] == "isFanWork")
                 isFanWorking = item[1] == "true"
@@ -231,7 +265,20 @@ class HomeFragment : Fragment() {
             binding.fanbtn.text = "Включить вентилятор"
         }
         binding.whenTurnOnFantxt.setText(whenTurnOnFan.toString())
+    }
 
+    private fun lightWorking(){
+        for (item in sensors) {
+            if (item[0] == "isLightOn")
+                isLightOn = item[1] == "true"
+        }
+        if (isLightOn) {
+            binding.lighttxt.text = "Свет включён"
+            binding.lightbtn.text = "Выключить свет"
+        } else {
+            binding.lighttxt.text = "Свет отключён"
+            binding.lightbtn.text = "Включить свет"
+        }
     }
 
     private fun dateToCalendar(date: Date): Calendar {
