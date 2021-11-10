@@ -43,6 +43,7 @@ class HomeFragment : Fragment() {
     private var today = 0
     var isFanWorking = false
     private var selected = ""
+    private var whenTurnOnFan = 45.2F
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -64,7 +65,8 @@ class HomeFragment : Fragment() {
                 itemSelected: View, selectedItemPosition: Int, selectedId: Long
             ) {
                 today = selectedItemPosition
-                selectFromSpinner(name = name)
+                if (sensors.isNotEmpty())
+                    selectFromSpinner(name = name)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -76,7 +78,19 @@ class HomeFragment : Fragment() {
                 itemSelected: View, selectedItemPosition: Int, selectedId: Long
             ) {
                 selected = allrooms[selectedItemPosition]
-                selectFromSpinner(name = name)
+                sensors.clear()
+
+                val database = FirebaseDatabase.getInstance().reference
+                val reference = database.child(name).child("rooms").child(selected)
+                reference.get().addOnSuccessListener {
+                    for (post in it.children) {
+                        val buffArray = arrayOf(post.key.toString(), post.value.toString())
+
+                        sensors.add(buffArray)
+                    }
+                    selectFromSpinner(name = name)
+                }
+
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -85,14 +99,49 @@ class HomeFragment : Fragment() {
         if (name != "")
             getCategoryFromDB(name = name)
 
-        binding.fanbtn.setOnClickListener {
-            val database = FirebaseDatabase.getInstance().reference
+        binding.whenTurnOnFantxt.setOnClickListener {
+            val databasee = FirebaseDatabase.getInstance().reference
+            val number: Float = binding.whenTurnOnFantxt.text.toString().toFloat()
             val reference =
-                database.child(name).child("rooms").child(selected).child("isFanWorkRoot")
+                databasee.child(name).child("rooms").child(selected).child("whenTurnOnFan")
+            reference.setValue(number)
+            Toast.makeText(
+                requireContext(),
+                "Порог успешно выставлен",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+
+        binding.whenTurnOnFanbtn.setOnClickListener {
+            val databasee = FirebaseDatabase.getInstance().reference
+            val number: Float = binding.whenTurnOnFantxt.text.toString().toFloat()
+
+            val reference =
+                databasee.child(name).child("rooms").child(selected).child("whenTurnOnFan")
+            reference.setValue(number).addOnSuccessListener {
+                Toast.makeText(
+                    requireContext(),
+                    "Порог успешно выставлен",
+                    Toast.LENGTH_LONG
+                ).show()
+            }.addOnFailureListener {
+                Toast.makeText(
+                    requireContext(),
+                    "Произошла ошибка",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+        binding.fanbtn.setOnClickListener {
+            val databasee = FirebaseDatabase.getInstance().reference
+            val reference =
+                databasee.child(name).child("rooms").child(selected).child("isFanWorkRoot")
             if (isFanWorking) {
                 binding.fantxt.text = "Вентилятор отключён"
                 binding.fanbtn.text = "Включить вентилятор"
                 reference.setValue(false)
+                isFanWorking = false
                 Toast.makeText(
                     requireContext(),
                     "Вентилятор выключится в течение 10 минут",
@@ -101,6 +150,7 @@ class HomeFragment : Fragment() {
             } else {
                 binding.fantxt.text = "Вентилятор работает"
                 binding.fanbtn.text = "Выключить вентилятор"
+                isFanWorking = true
                 reference.setValue(true)
                 Toast.makeText(
                     requireContext(),
@@ -114,14 +164,18 @@ class HomeFragment : Fragment() {
     }
 
     private fun selectFromSpinner(name: String) {
+
         if (sensors[0][0] == "Sensor0") {
             val oneDay = 1000 * 60 * 60 * 24
             val mydate = Date(System.currentTimeMillis() - oneDay * today)
             val dateFormat = SimpleDateFormat("yyyy-MM-dd")
             val whatDayGet: String = dateFormat.format(mydate)
-            Log.d("DAY IS", whatDayGet)
             readSQLDB(name = name, sensor = sensors[0][1].toInt(), whatDayGet = whatDayGet)
         }
+        if (sensors[1][0] == "Sensor1") {
+            fanWorking()
+        }
+
     }
 
     private fun getCategoryFromDB(name: String) {
@@ -130,10 +184,7 @@ class HomeFragment : Fragment() {
         reference.get().addOnSuccessListener {
             for (postSnapshot in it.children) {
                 allrooms.add(postSnapshot.key.toString())
-                for (post in postSnapshot.children) {
-                    val buffArray = arrayOf(post.key.toString(), post.value.toString())
-                    sensors.add(buffArray)
-                }
+
             }
             selected = allrooms[0]
             val adaptermain: ArrayAdapter<String> =
@@ -154,7 +205,7 @@ class HomeFragment : Fragment() {
                 )
             adapterdate.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinnerDate.adapter = adapterdate
-            fanWorking(name)
+
 
         }
     }
@@ -164,20 +215,23 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 
-    private fun fanWorking(name: String) {
-        val database = FirebaseDatabase.getInstance().reference
-        val reference = database.child(name).child("rooms").child(selected).child("isFanWork")
-        reference.get().addOnSuccessListener {
-            isFanWorking = it.value as Boolean
-            if (isFanWorking) {
-                binding.fantxt.text = "Вентилятор работает"
-                binding.fanbtn.text = "Выключить вентилятор"
-            } else {
-                binding.fantxt.text = "Вентилятор отключён"
-                binding.fanbtn.text = "Включить вентилятор"
-            }
+    private fun fanWorking() {
 
+        for (item in sensors) {
+            if (item[0] == "isFanWork")
+                isFanWorking = item[1] == "true"
+            if (item[0] == "whenTurnOnFan")
+                whenTurnOnFan = item[1].toFloat()
         }
+        if (isFanWorking) {
+            binding.fantxt.text = "Вентилятор работает"
+            binding.fanbtn.text = "Выключить вентилятор"
+        } else {
+            binding.fantxt.text = "Вентилятор отключён"
+            binding.fanbtn.text = "Включить вентилятор"
+        }
+        binding.whenTurnOnFantxt.setText(whenTurnOnFan.toString())
+
     }
 
     private fun dateToCalendar(date: Date): Calendar {

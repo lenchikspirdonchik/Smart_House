@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
@@ -93,22 +94,94 @@
                 android:layout_width="match_parent"
                 android:layout_height="10dp" />
 
-            <TextView
-                android:id="@+id/fantxt"
+
+            <LinearLayout
+                android:id="@+id/FanManagement"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="Вентилятор не работает." />
+                android:orientation="horizontal">
 
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="10dp" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:paddingLeft="10dp">
 
-            <Button
-                android:id="@+id/fanbtn"
-                android:layout_width="186dp"
-                android:layout_height="36dp"
-                android:text="Включить вентилятор"
-                android:textAlignment="center" />
+
+
+                    <TextView
+                        android:id="@+id/fantxt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Вентилятор не работает." />
+
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="24dp" />
+
+                    <ImageView
+                        android:id="@+id/imageView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srcCompat="@drawable/ic_baseline_loyalty_24" />
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="23dp" />
+                    <Button
+                        android:id="@+id/fanbtn"
+                        android:layout_width="186dp"
+                        android:layout_height="36dp"
+                        android:text="Включить вентилятор"
+                        android:textAlignment="center" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="10dp"
+                    android:layout_height="10dp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/darker_gray" />
+
+                <Space
+                    android:layout_width="10dp"
+                    android:layout_height="10dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingRight="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/fantt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Порог включения вентилятора" />
+
+                    <EditText
+                        android:id="@+id/whenTurnOnFantxt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:singleLine="true"
+                        android:text="25.4" />
+
+                    <Space
+                        android:layout_width="match_parent"
+                        android:layout_height="10dp" />
+
+                    <Button
+                        android:id="@+id/whenTurnOnFanbtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Готово"
+                        android:textAlignment="center" />
+                </LinearLayout>
+
+            </LinearLayout>
+
 
             <Space
                 android:layout_width="match_parent"
