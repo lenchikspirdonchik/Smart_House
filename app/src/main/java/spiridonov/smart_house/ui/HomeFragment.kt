@@ -2,6 +2,7 @@ package spiridonov.smart_house.ui
 
 import android.content.Context
 import android.graphics.Color
+import android.opengl.Visibility
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -196,19 +197,31 @@ class HomeFragment : Fragment() {
     }
 
     private fun selectFromSpinner(name: String) {
-
-        if (sensors[0][0] == "Sensor0") {
-            val oneDay = 1000 * 60 * 60 * 24
-            val mydate = Date(System.currentTimeMillis() - oneDay * today)
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-            val whatDayGet: String = dateFormat.format(mydate)
-            readSQLDB(name = name, sensor = sensors[0][1].toInt(), whatDayGet = whatDayGet)
-        }
-        if (sensors[1][0] == "Sensor1") {
-            fanWorking()
-        }
-        if (sensors[2][0] == "Sensor2") {
-            lightWorking()
+        val humidityLayout =  binding.humidityManagement
+        val ventilationLayout =  binding.FanManagement
+        val lightLayout =  binding.LightManagement
+        humidityLayout.visibility = View.GONE
+        ventilationLayout.visibility = View.GONE
+        lightLayout.visibility = View.GONE
+        for (i in 0..sensors.lastIndex) {
+            when {
+                sensors[i][0] == "Sensor0" -> {
+                    humidityLayout.visibility = View.VISIBLE
+                    val oneDay = 1000 * 60 * 60 * 24
+                    val mydate = Date(System.currentTimeMillis() - oneDay * today)
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+                    val whatDayGet: String = dateFormat.format(mydate)
+                    readSQLDB(name = name, sensor = sensors[0][1].toInt(), whatDayGet = whatDayGet)
+                }
+                sensors[i][0] == "Sensor1" -> {
+                   ventilationLayout.visibility = View.VISIBLE
+                    fanWorking()
+                }
+                sensors[i][0] == "Sensor2" -> {
+                    lightLayout.visibility = View.VISIBLE
+                    lightWorking()
+                }
+            }
         }
 
     }
@@ -267,7 +280,7 @@ class HomeFragment : Fragment() {
         binding.whenTurnOnFantxt.setText(whenTurnOnFan.toString())
     }
 
-    private fun lightWorking(){
+    private fun lightWorking() {
         for (item in sensors) {
             if (item[0] == "isLightOn")
                 isLightOn = item[1] == "true"
