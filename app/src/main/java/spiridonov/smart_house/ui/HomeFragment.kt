@@ -2,7 +2,6 @@ package spiridonov.smart_house.ui
 
 import android.content.Context
 import android.graphics.Color
-import android.opengl.Visibility
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -197,9 +196,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun selectFromSpinner(name: String) {
-        val humidityLayout =  binding.humidityManagement
-        val ventilationLayout =  binding.FanManagement
-        val lightLayout =  binding.LightManagement
+        val humidityLayout = binding.humidityManagement
+        val ventilationLayout = binding.FanManagement
+        val lightLayout = binding.LightManagement
         humidityLayout.visibility = View.GONE
         ventilationLayout.visibility = View.GONE
         lightLayout.visibility = View.GONE
@@ -214,7 +213,7 @@ class HomeFragment : Fragment() {
                     readSQLDB(name = name, sensor = sensors[0][1].toInt(), whatDayGet = whatDayGet)
                 }
                 sensors[i][0] == "Sensor1" -> {
-                   ventilationLayout.visibility = View.VISIBLE
+                    ventilationLayout.visibility = View.VISIBLE
                     fanWorking()
                 }
                 sensors[i][0] == "Sensor2" -> {

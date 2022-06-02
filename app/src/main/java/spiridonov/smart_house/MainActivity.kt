@@ -3,7 +3,6 @@ package spiridonov.smart_house
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
@@ -12,17 +11,15 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import spiridonov.smart_house.databinding.ActivityMainBinding
-import com.google.firebase.analytics.FirebaseAnalytics
-
-
 
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+        val mFirebaseAnalytics = FirebaseAnalytics.getInstance(this)
         val msp = this.getSharedPreferences("AppMemory", Context.MODE_PRIVATE)
         var name = ""
         if (msp.contains(KEY_LOGIN)) name = msp.getString(KEY_LOGIN, "").toString()
